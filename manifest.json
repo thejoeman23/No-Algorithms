@@ -1,0 +1,13 @@
+{
+  "name": "No Algorithms",
+  "manifest_version": 3,
+  "version": "1.0.0",
+  "description": "Removes algorithmic feeds from websites. No toggles.",
+  "content_scripts": [
+    {
+      "matches": ["*://*.google.com/*"],
+      "js": ["sites/google.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
