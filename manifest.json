@@ -5,9 +5,9 @@
   "description": "Removes algorithmic feeds from websites. No toggles.",
   "content_scripts": [
     {
-      "matches": ["*://*.google.com/*"],
-      "js": ["sites/google.js"],
-      "run_at": "document_idle"
+      "matches": ["*://*.youtube.com/*"],
+      "css": ["sites/block.css"],
+      "js": ["sites/youtube.js"]
     }
   ]
 }

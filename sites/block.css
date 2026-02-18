@@ -1,0 +1,18 @@
+a[title="Shorts"],
+a[title="Home"],
+#secondary,
+#title,
+.yt-tab-shape[tab-title="Shorts"],
+.ytChipShapeButtonReset[aria-label="Shorts"],
+.scwnr-content.single-column-watch-next-modern-panels[section-identifier="related-items"],
+.ytp-fullscreen-grid-main-content,
+.pivot-bar-item-tab.pivot-shorts,
+.style-scope.ytd-rich-section-renderer[is-shorts] {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+}
+
+title {
+    content: "Youtube";
+}
