@@ -8,6 +8,10 @@
       "matches": ["*://*.youtube.com/*"],
       "css": ["sites/block.css"],
       "js": ["sites/youtube.js"]
+    },
+    {
+      "matches": ["*://*.instagram.com/*"],
+      "css": ["sites/block.css"]    
     }
   ]
 }
