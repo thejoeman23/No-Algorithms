@@ -1,13 +1,27 @@
+/* Youtube */
+
 a[title="Shorts"],
 a[title="Home"],
-#secondary,
-#title,
+
+#title-text,
+#secondary:has(#secondary-inner),
+.ytd-reel-shelf-renderer,
+
+#sections > :first-child,
+.ytd-notification-renderer:has(a[href*="shorts"]),
+#section-title,
+
 .yt-tab-shape[tab-title="Shorts"],
 .ytChipShapeButtonReset[aria-label="Shorts"],
 .scwnr-content.single-column-watch-next-modern-panels[section-identifier="related-items"],
 .ytp-fullscreen-grid-main-content,
 .pivot-bar-item-tab.pivot-shorts,
-.style-scope.ytd-rich-section-renderer[is-shorts] {
+.style-scope.ytd-rich-section-renderer[is-shorts],
+
+a[title*="Next"],
+a[title*="Previous"]
+
+{
     display: none !important;
     height: 0 !important;
     width: 0 !important;
@@ -15,4 +29,15 @@ a[title="Home"],
 
 title {
     content: "Youtube";
+}
+
+/* Instagram */
+
+a[href="/reels/"],
+a[href="/explore/"],
+article:has(span[style="line-height: 16px;"])
+{
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
 }
