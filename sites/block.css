@@ -11,6 +11,9 @@ a[title="Home"],
 .ytd-notification-renderer:has(a[href*="shorts"]),
 #section-title,
 
+div[aria-label="Hide videos"],
+button[aria-label*="More videos"],
+
 .yt-tab-shape[tab-title="Shorts"],
 .ytChipShapeButtonReset[aria-label="Shorts"],
 .scwnr-content.single-column-watch-next-modern-panels[section-identifier="related-items"],
