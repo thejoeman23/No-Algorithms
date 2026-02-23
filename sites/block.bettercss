@@ -4,7 +4,6 @@ a[title="Shorts"],
 a[title="Home"],
 
 #title-text,
-#secondary:has(#secondary-inner),
 .ytd-reel-shelf-renderer,
 
 #sections > :first-child,
@@ -21,8 +20,9 @@ button[aria-label*="More videos"],
 .pivot-bar-item-tab.pivot-shorts,
 .style-scope.ytd-rich-section-renderer[is-shorts],
 
-a[title*="Next"],
-a[title*="Previous"]
+#related,
+
+a[title*="Next"]
 
 {
     display: none !important;
@@ -34,6 +34,22 @@ title {
     content: "Youtube";
 }
 
+if #playlist[hidden] in #secondary-inner {
+    #secondary:has(#secondary-inner) {
+        display: none !important;
+        height: 0 !important;
+        width: 0 !important;
+    }
+}
+
+if not #playlist in #secondary-inner {
+    #secondary:has(#secondary-inner) {
+        display: none !important;
+        height: 0 !important;
+        width: 0 !important;
+    }
+}
+
 /* Instagram */
 
 a[href="/reels/"],
@@ -43,4 +59,10 @@ article:has(span[style="line-height: 16px;"])
     display: none !important;
     height: 0 !important;
     width: 0 !important;
+}
+
+if not p in #pandas {
+    body {
+        background-color: green;
+    }
 }
