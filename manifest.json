@@ -8,9 +8,6 @@
       "matches": ["*://*.youtube.com/*"],
       "js": ["sites/youtube.js", "parser.js"]
     }
-    // {
-    //   "matches": ["*://*.instagram.com/*"]
-    // }
   ],
   "web_accessible_resources": [{
     "resources": ["sites/block.bettercss"],

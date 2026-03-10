@@ -18,7 +18,7 @@ button[aria-label*="More videos"],
 .scwnr-content.single-column-watch-next-modern-panels[section-identifier="related-items"],
 .ytp-fullscreen-grid-main-content,
 .pivot-bar-item-tab.pivot-shorts,
-.style-scope.ytd-rich-section-renderer[is-shorts],
+.ytd-rich-section-renderer[is-shorts],
 
 #related,
 
