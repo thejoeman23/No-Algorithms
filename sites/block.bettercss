@@ -23,7 +23,10 @@ ytd-notification-renderer:has(a[href*="shorts"]),
 .ytChipShapeButtonReset[aria-label="Shorts"],
 
 /* Video Page (removed reccomendations) */
-#related
+#related,
+
+/* Home Page (removed shorts) */
+ytd-rich-shelf-renderer[is-shorts]
 
 {
     display: none !important;
