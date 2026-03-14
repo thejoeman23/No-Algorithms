@@ -1,7 +1,15 @@
 /* Youtube Mobile */
 
-a[title="Shorts"],
-a[title="Home"]
+/* Home Page (removed shorts and home+shorts buttons on the bottom) */
+ytm-rich-section-renderer:has(a[href*="short"]),
+ytm-pivot-bar-item-renderer:has(.pivot-w2w),
+ytm-pivot-bar-item-renderer:has(.pivot-shorts),
+
+/* Video Page (removed reccomendations) */
+[section-identifier="related-items"],
+
+/* Watch History Page */
+lazy-list > ytm-reel-shelf-renderer
 
 {
     display: none !important;
@@ -20,13 +28,15 @@ ytd-notification-renderer:has(a[href*="shorts"]),
 .yt-tab-shape[tab-title="Shorts"],
 
 /* Watch History Page (removed shorts tab) */
-.ytChipShapeButtonReset[aria-label="Shorts"],
+.ytChipBarViewModelChipWrapper:has(button[aria-label="Shorts"]),
 
 /* Video Page (removed reccomendations) */
 #related,
 
-/* Home Page (removed shorts) */
-ytd-rich-shelf-renderer[is-shorts]
+/* Home Page (removed shorts and home+shorts buttons) */
+ytd-rich-shelf-renderer[is-shorts],
+a[title="Shorts"],
+a[title="Home"]
 
 {
     display: none !important;
