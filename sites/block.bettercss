@@ -19,19 +19,42 @@ lazy-list > ytm-reel-shelf-renderer
 
 /* Youtube Desktop */
 
-/* Notifications (removed shorts and "important" notifications) */
-#sections > :first-child,
-ytd-notification-renderer:has(a[href*="shorts"]),
-#section-title,
+/* Video Page (removed reccomendations) */
+#related {
+    pointer-events: none;       /* block all clicks */
+    overflow: hidden;
+    width: auto;                /* keep natural width for the pop */
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateX(0);   /* start position */
+    animation: popSlideFade 4s forwards; /* triggers animation */
+}
 
 /* Chanel Page (removed Shorts tab) */
-.yt-tab-shape[tab-title="Shorts"],
+.yt-tab-shape[tab-title="Shorts"] {
+    pointer-events: none;       /* block all clicks */
+    overflow: hidden;
+    width: auto;                /* keep natural width for the pop */
+    opacity: 1;
+    filter: blur(0px);
+    animation: shrinkFade 2s forwards;
+}
 
 /* Watch History Page (removed shorts tab) */
-.ytChipBarViewModelChipWrapper:has(button[aria-label="Shorts"]),
+ytd-reel-shelf-renderer:has(#title) { display: none; width: 0; height: 0 ;}
 
-/* Video Page (removed reccomendations) */
-#related,
+.ytChipBarViewModelChipWrapper:has(button[aria-label="Shorts"])
+{
+    pointer-events: none;       /* block all clicks */
+    overflow: hidden;
+    width: auto;                /* keep natural width for the pop */
+    opacity: 1;
+    filter: blur(0px);
+    animation: shrinkFadeABitMore 2s forwards;
+}
+
+/* Notifications (removed shorts) */
+ytd-notification-renderer:has(a[href*="shorts"]),
 
 /* Home Page (removed shorts and home+shorts buttons) */
 ytd-rich-shelf-renderer[is-shorts],
@@ -39,9 +62,9 @@ a[title="Shorts"],
 a[title="Home"]
 
 {
-    display: none !important;
-    height: 0 !important;
-    width: 0 !important;
+    filter: blur(2.5px);
+    pointer-events: none; /* <- makes them completely dead */
+    z-index: 9999; /* optional, can help if some child has weird layering */
 }
 
 /* Instagram */
@@ -53,4 +76,49 @@ article:has(span[style="line-height: 16px;"])
     display: none !important;
     height: 0 !important;
     width: 0 !important;
+}
+
+/* Animations */
+
+/* Keyframes: pop out right a bit, then slide left + fade + blur */
+@keyframes popSlideFade {
+    0% {
+        opacity: 1;
+        filter: blur(3px);
+        transform: translateX(0);
+    }
+    15% {
+        opacity: 1;
+        filter: blur(3px);
+        transform: translateX(0);
+    }
+    100% {
+        opacity: 0;
+        filter: blur(35px);
+        transform: scale(-50px); /* slide left while disappearing */
+    }
+}
+
+@keyframes shrinkFade {
+    0% {
+        opacity: 1;
+        filter: blur(3px);
+    }
+    100% {
+        opacity: 0;
+        filter: blur(35px);
+        margin-right: -45px;
+    }
+}
+
+@keyframes shrinkFadeABitMore {
+    0% {
+        opacity: 1;
+        filter: blur(3px);
+    }
+    100% {
+        opacity: 0;
+        filter: blur(35px);
+        margin-right: -65px;
+    }
 }

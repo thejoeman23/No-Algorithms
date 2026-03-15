@@ -97,7 +97,7 @@ function redirectHomeLinks(root = document) {
 
 /**
  * Force navigation to subscriptions if a rewritten
- * "home" link is clicked.
+ * "home" link is clicked. 
  */
 function forceSubscriptionsNavigation(event) {
   if (event.button !== 0) return; // Only left click
@@ -122,10 +122,11 @@ function forceSubscriptionsNavigation(event) {
  */
 function movePlaylistLocation(root = document) {
   const videoEl = document.querySelector("ytd-watch-flexy");
+  const sidebarEl = document.querySelector("#secondary-inner");
   if (!videoEl) return;
-  if (!videoEl.hasAttribute("playlist")) {
+  if (!videoEl.hasAttribute("playlist") && !sidebarEl.contains("#chat-container")) {
     const style = document.createElement("style");
-    style.textContent = "#secondary { display: none !important; width: 0 !important; }";
+    style.textContent = "#secondary { filter: blur(10px) }";
     document.head.appendChild(style);
 
     return;
