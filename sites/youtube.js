@@ -44,11 +44,17 @@ function redirections() {
   if (location.pathname.startsWith("/shorts")) {
     window.location.replace(subscriptionsUrl);
   }
+}
+
+function renameDocumentTitle() {
+  const newTitle = "YouTube";
+
+  if (!isYouTubeHost) return;
+  if (document.title === newTitle) return;
+  if (location.pathname !== subscriptionsPath) return;
 
   // Keep title clean on subscriptions page
-  if (location.pathname === subscriptionsPath) {
-    document.title = "YouTube";
-  }
+  document.title = newTitle;
 }
 
 
@@ -186,7 +192,6 @@ function runOnLocationChanged() {
 
   previousLocationHref = location.href;
   redirections();
-  // movePlaylistLocation();
 }
 
 
@@ -224,7 +229,6 @@ function setupLocationChangeListeners() {
 function start() {
   redirections();
   redirectHomeLinks();
-  // movePlaylistLocation();
   addInfoCardToReccomendations();
 
   setupLocationChangeListeners();
@@ -235,9 +239,9 @@ function start() {
   // Observe DOM changes (YouTube constantly mutates the page)
   observer = new MutationObserver(() => {
     requestAnimationFrame(() => {
-      runOnLocationChanged();
       redirectHomeLinks();
       addInfoCardToReccomendations();
+      renameDocumentTitle();
     });
   });
 
