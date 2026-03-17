@@ -6,11 +6,13 @@
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*"],
-      "js": ["sites/youtube.js", "parser.js"]
+      "js": ["Youtube/main.js"],
+      "css": ["Youtube/style.css"]
+    },
+    {
+      "matches": ["*://*.instagram.com/*"],
+      "js": ["Instagram/main.js"],
+      "css": ["Instagram/style.css"]
     }
-  ],
-  "web_accessible_resources": [{
-    "resources": ["sites/block.bettercss"],
-    "matches": ["<all_urls>"]
-  }]
+  ]
 }
