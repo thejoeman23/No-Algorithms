@@ -139,6 +139,39 @@ function movePlaylistLocation(root = document) {
   moved_playlist_location = true;
 }
 
+function addInfoCardToReccomendations() {
+  const sidebarEl = document.querySelector("#secondary-inner");
+
+  if (!sidebarEl) return;
+  if (document.querySelector("#info-card")) return;
+
+  const infoEl = document.createElement("div")
+  infoEl.id = "info-card";
+  infoEl.classList.add("info-card");
+
+  const textEl1 = document.createElement("span");
+  textEl1.textContent = "What next?"
+  textEl1.id = "info-card-top-text";
+  const textEl2 = document.createElement("span");
+  textEl2.textContent = "YOU decide."
+  textEl2.id = "info-card-main-text";
+
+  const buttonEl = document.createElement("button");
+  buttonEl.textContent = "Search";
+  buttonEl.id = "info-card-button";
+  
+  sidebarEl.insertBefore(infoEl, sidebarEl.firstChild);
+  infoEl.append(textEl1);
+  infoEl.append(textEl2);
+  infoEl.append(buttonEl);
+
+  buttonEl.addEventListener("click", () => {
+    console.log("log");
+    const searchbox = document.querySelector('[name="search_query"');
+    searchbox.focus();
+  })
+}
+
 
 // ============================================================
 // SPA Navigation Detection
@@ -153,7 +186,7 @@ function runOnLocationChanged() {
 
   previousLocationHref = location.href;
   redirections();
-  movePlaylistLocation();
+  // movePlaylistLocation();
 }
 
 
@@ -191,7 +224,8 @@ function setupLocationChangeListeners() {
 function start() {
   redirections();
   redirectHomeLinks();
-  movePlaylistLocation();
+  // movePlaylistLocation();
+  addInfoCardToReccomendations();
 
   setupLocationChangeListeners();
 
@@ -203,6 +237,7 @@ function start() {
     requestAnimationFrame(() => {
       runOnLocationChanged();
       redirectHomeLinks();
+      addInfoCardToReccomendations();
     });
   });
 
