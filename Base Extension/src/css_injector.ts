@@ -3,7 +3,7 @@ class css_injector {
         console.log("Injector Online");
     }
 
-    public Inject(css : string): void{
+    private Inject(css : string): void{
         const style = document.createElement("style");
         style.textContent = css;
         document.head.appendChild(style);

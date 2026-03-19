@@ -22,54 +22,67 @@ class App {
 
   constructor() {
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => this.start(), { once: true });
+      document.addEventListener("DOMContentLoaded", () => this.Start(), { once: true });
     } else {
-      this.start();
+      this.Start();
     }
 
     console.log("Running constructor...");
   }
 
+  // Load settings and inject CSS for the target site
   async set_up_settings() {
-    // Dynamically load settings.json for the matching site
     const siteListResponse = await fetch(chrome.runtime.getURL("sites/index.json"));
     const siteFolders: string[] = await siteListResponse.json();
     console.log(`Site folders: ${siteFolders}`);
 
     for (const folder of siteFolders) {
       const settingsUrl = chrome.runtime.getURL(`sites/${folder}/settings.json`);
+      const cssUrl = chrome.runtime.getURL(`sites/${folder}/style.css`);
+
       const settingsResponse = await fetch(settingsUrl);
+      const cssResponse = await fetch(cssUrl);
+
       this.settings = await settingsResponse.json();
-      console.log(`Settings: ${this.settings}`);
-      console.log(`Settings: ${JSON.stringify(this.settings)}`);
+      const css = await cssResponse.text();
+      this.Inject(css);
       break; // stop after first found site
     }
   }
 
-  private is_correct_website(): boolean {
+  // Inject CSS into document head
+  private Inject(css: string): void {
+    const style = document.createElement("style");
+    style.textContent = css;
+    document.head.appendChild(style);
+    console.log("Injected:\n" + css);
+  }
+
+  // Check if current website matches the configured site
+  private Is_correct_website(): boolean {
     return location.hostname.includes(this.settings.website_name);
   }
 
-  private shouldRedirect(pathname: string): boolean {
+  // Determine if the current path should be redirected
+  private ShouldRedirect(pathname: string): boolean {
     for (const blockedPath of this.settings.blocked_paths) {
-      if (pathname.startsWith(blockedPath)) {
-        return true;
-      }
+      if (pathname.startsWith(blockedPath)) return true;
     }
     return false;
   }
 
-  private redirections(): void {
-    if (!this.is_correct_website()) return;
+  // Redirect user to home path if on blocked path
+  private Redirections(): void {
+    if (!this.Is_correct_website()) return;
 
-    if (this.shouldRedirect(location.pathname) && location.pathname !== this.settings.home_path) {
-      const home_url: string = `${location.protocol}//${location.host}${this.settings.home_path}`;
-      window.location.replace(home_url);
+    if (this.ShouldRedirect(location.pathname) && location.pathname !== this.settings.home_path) {
+      window.location.replace(`${location.protocol}//${location.host}${this.settings.home_path}`);
     }
   }
 
-  private renameDocumentTitle(): void {
-    if (!this.is_correct_website()) return;
+  // Rename document title based on custom path titles
+  private RenameDocumentTitle(): void {
+    if (!this.Is_correct_website()) return;
 
     for (const customTitle of this.settings.custom_path_titles) {
       if (location.pathname === customTitle.path && document.title !== customTitle.title) {
@@ -79,12 +92,12 @@ class App {
     }
   }
 
-  private rerouteLinks(root: Document | HTMLElement = document): void {
-    root.querySelectorAll("a[href]").forEach((link) => {
-      const href: string | null = link.getAttribute("href");
+  // Reroute or remove links based on settings
+  private RerouteLinks(root: Document | HTMLElement = document): void {
+    root.querySelectorAll("a[href]").forEach(link => {
+      const href = link.getAttribute("href");
       if (!href) return;
 
-      // Remove links that match remove_links_to_path
       for (const removePath of this.settings.remove_links_to_path) {
         if (href.startsWith(removePath)) {
           link.parentElement?.remove();
@@ -99,16 +112,12 @@ class App {
         return;
       }
 
-      const isTargetUrl: boolean =
-        url.hostname === "youtube.com" || url.hostname.endsWith(".youtube.com");
-
+      const isTargetUrl = url.hostname === "youtube.com" || url.hostname.endsWith(".youtube.com");
       if (!isTargetUrl) return;
 
-      // Redirect links that match blocked_paths to home_path
       for (const blockedPath of this.settings.blocked_paths) {
         if (url.pathname.startsWith(blockedPath)) {
-          const home_url: string = `${location.protocol}//${location.host}${this.settings.home_path}`;
-          link.setAttribute("href", home_url);
+          link.setAttribute("href", `${location.protocol}//${location.host}${this.settings.home_path}`);
           // @ts-ignore
           (link.dataset as DOMStringMap)["noalgHomeLink"] = "1";
           break;
@@ -118,7 +127,8 @@ class App {
   }
 
   /*
-  private forceSubscriptionsNavigation(event: MouseEvent): void {
+  // Force navigation to subscriptions page on certain link clicks
+  private ForceSubscriptionsNavigation(event: MouseEvent): void {
     if (event.button !== 0) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
@@ -131,22 +141,21 @@ class App {
     event.preventDefault();
     event.stopPropagation();
 
-    const subscriptionsUrl: string = `${location.protocol}//${location.host}${this.settings.home_path}`;
+    const subscriptionsUrl = `${location.protocol}//${location.host}${this.settings.home_path}`;
     window.location.assign(subscriptionsUrl);
   }
   */
 
-  private movePlaylistLocation(root: Document | HTMLElement = document): void {
+  // Adjust playlist location and blur sidebar if needed
+  private MovePlaylistLocation(root: Document | HTMLElement = document): void {
     const videoEl = document.querySelector("ytd-watch-flexy") as HTMLElement | null;
     const sidebarEl = document.querySelector("#secondary-inner") as HTMLElement | null;
-    if (!videoEl) return;
-    if (!sidebarEl) return;
+    if (!videoEl || !sidebarEl) return;
 
     if (!videoEl.hasAttribute("playlist") && !sidebarEl.contains(document.querySelector("#chat-container") as HTMLElement | null)) {
       const style = document.createElement("style");
       style.textContent = "#secondary { filter: blur(10px) }";
       document.head.appendChild(style);
-
       return;
     }
     if (videoEl.hasAttribute("theater")) return;
@@ -155,9 +164,9 @@ class App {
     videoEl.setAttribute("is_single_column_", "");
   }
 
-  private addInfoCardToRecommendations(): void {
+  // Add info card to recommendations sidebar
+  private AddInfoCardToRecommendations(): void {
     const sidebarEl = document.querySelector("#secondary-inner") as HTMLElement | null;
-
     if (!sidebarEl) return;
     if (document.querySelector("#info-card")) return;
 
@@ -168,6 +177,7 @@ class App {
     const textEl1 = document.createElement("span");
     textEl1.textContent = "What next?";
     textEl1.id = "info-card-top-text";
+
     const textEl2 = document.createElement("span");
     textEl2.textContent = "YOU decide.";
     textEl2.id = "info-card-main-text";
@@ -177,9 +187,7 @@ class App {
     buttonEl.id = "info-card-button";
 
     sidebarEl.insertBefore(infoEl, sidebarEl.firstChild);
-    infoEl.append(textEl1);
-    infoEl.append(textEl2);
-    infoEl.append(buttonEl);
+    infoEl.append(textEl1, textEl2, buttonEl);
 
     buttonEl.addEventListener("click", () => {
       const searchbox = document.querySelector('[name="search_query"') as HTMLElement | null;
@@ -187,45 +195,47 @@ class App {
     });
   }
 
-  private runOnLocationChanged(): void {
-    this.redirections();
+  // Run redirections on location change
+  private RunOnLocationChanged(): void {
+    this.Redirections();
   }
 
-  private setupLocationChangeListeners(): void {
+  // Setup listeners for history and hash changes
+  private SetupLocationChangeListeners(): void {
     const { pushState, replaceState } = history;
-
     const self = this;
 
     history.pushState = function (...args: any[]): any {
       const result = pushState.apply(this, args);
-      self.runOnLocationChanged();
+      self.RunOnLocationChanged();
       return result;
     };
 
     history.replaceState = function (...args: any[]): any {
       const result = replaceState.apply(this, args);
-      self.runOnLocationChanged();
+      self.RunOnLocationChanged();
       return result;
     };
 
-    window.addEventListener("popstate", () => this.runOnLocationChanged());
-    window.addEventListener("hashchange", () => this.runOnLocationChanged());
+    window.addEventListener("popstate", () => this.RunOnLocationChanged());
+    window.addEventListener("hashchange", () => this.RunOnLocationChanged());
   }
 
-  public async start(): Promise<void> {
+  // Start the app by loading settings and setting up observers
+  public async Start(): Promise<void> {
     await this.set_up_settings().catch(err => console.error("Failed to load settings", err));
-    this.redirections();
-    this.addInfoCardToRecommendations();
+    this.Redirections();
+    this.AddInfoCardToRecommendations();
 
-    this.setupLocationChangeListeners();
+    this.SetupLocationChangeListeners();
 
-    // document.addEventListener("click", this.forceSubscriptionsNavigation.bind(this), true);
+    // document.addEventListener("click", this.ForceSubscriptionsNavigation.bind(this), true);
 
     const observer = new MutationObserver(() => {
       requestAnimationFrame(() => {
-        this.rerouteLinks();
-        this.addInfoCardToRecommendations();
-        this.renameDocumentTitle();
+        this.RerouteLinks();
+        this.AddInfoCardToRecommendations();
+        this.RenameDocumentTitle();
       });
     });
 
