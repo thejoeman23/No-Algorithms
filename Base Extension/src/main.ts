@@ -20,6 +20,8 @@ interface Settings {
 class App {
   private settings!: Settings;
 
+  private home_url!: string;
+
   constructor() {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => this.Start(), { once: true });
@@ -50,6 +52,8 @@ class App {
     }
   }
 
+  //#region Helper Functions
+
   // Inject CSS into document head
   private Inject(css: string): void {
     const style = document.createElement("style");
@@ -63,10 +67,15 @@ class App {
     return location.hostname.includes(this.settings.website_name);
   }
 
+  //#endregion
+
+  //#region Redirections
+
   // Determine if the current path should be redirected
   private ShouldRedirect(pathname: string): boolean {
     for (const blockedPath of this.settings.blocked_paths) {
-      if (pathname.startsWith(blockedPath)) return true;
+      if (pathname === blockedPath) return true;
+      if (pathname.startsWith(blockedPath)) return false;
     }
     return false;
   }
@@ -75,10 +84,14 @@ class App {
   private Redirections(): void {
     if (!this.Is_correct_website()) return;
 
-    if (this.ShouldRedirect(location.pathname) && location.pathname !== this.settings.home_path) {
-      window.location.replace(`${location.protocol}//${location.host}${this.settings.home_path}`);
+    if (this.ShouldRedirect(location.pathname)) {
+      window.location.replace(this.home_url);
     }
   }
+
+  //#endregion
+
+  //#region Title Renaming
 
   // Rename document title based on custom path titles
   private RenameDocumentTitle(): void {
@@ -92,60 +105,80 @@ class App {
     }
   }
 
-  // Reroute or remove links based on settings
+  //#endregion
+
+  //#region Rerouting Links
+
+  // Reroute or remove links based on settings (fixed version)
   private RerouteLinks(root: Document | HTMLElement = document): void {
     root.querySelectorAll("a[href]").forEach(link => {
-      const href = link.getAttribute("href");
-      if (!href) return;
+        const dataset = link.dataset as DOMStringMap;
+        if (dataset.noalgProcessed) return; // skip already processed
 
-      for (const removePath of this.settings.remove_links_to_path) {
-        if (href.startsWith(removePath)) {
-          link.parentElement?.remove();
-          return;
+        const href = link.getAttribute("href");
+        if (!href) return;
+
+        // Remove links that start with remove_links_to_path
+        if (this.settings.remove_links_to_path.some(p => href.startsWith(p))) {
+            link.parentElement?.remove();
+            dataset.noalgProcessed = "1";
+            return;
         }
-      }
 
-      let url: URL;
-      try {
-        url = new URL(href, location.origin);
-      } catch {
-        return;
-      }
-
-      const isTargetUrl = url.hostname === "youtube.com" || url.hostname.endsWith(".youtube.com");
-      if (!isTargetUrl) return;
-
-      for (const blockedPath of this.settings.blocked_paths) {
-        if (url.pathname.startsWith(blockedPath)) {
-          link.setAttribute("href", `${location.protocol}//${location.host}${this.settings.home_path}`);
-          // @ts-ignore
-          (link.dataset as DOMStringMap)["noalgHomeLink"] = "1";
-          break;
+        let url: URL;
+        try { url = new URL(href, location.origin); } catch {
+            dataset.noalgProcessed = "1";
+            return;
         }
-      }
+
+        // Only target YouTube links
+        const hostname = url.hostname;
+        if (!(hostname === "youtube.com" || hostname.endsWith(".youtube.com"))) {
+            dataset.noalgProcessed = "1";
+            return;
+        }
+
+        // Redirect blocked paths, handle root "/" specially
+        if (url.pathname === "/" && this.settings.blocked_paths.includes("/")) {
+            link.setAttribute("href", this.home_url);
+            console.log(url.pathname);
+            dataset.noalgHomeLink = "1";
+        } else if (this.settings.blocked_paths.some(bp => bp !== "/" && (url.pathname === bp || url.pathname.startsWith(bp)))) {
+            link.setAttribute("href", this.home_url);
+            console.log(url.pathname);
+            dataset.noalgHomeLink = "1";
+        }
+
+        // Mark as processed
+        dataset.noalgProcessed = "1";
     });
   }
 
-  /*
-  // Force navigation to subscriptions page on certain link clicks
-  private ForceSubscriptionsNavigation(event: MouseEvent): void {
+  // Force navigation to href of rerouted links
+  private ForceReroutedLinks(event: MouseEvent): void {
     if (event.button !== 0) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
+    const path = event.composedPath();
 
-    const link = target.closest('a[data-noalg-home-link="1"]') as HTMLAnchorElement | null;
-    if (!link) return;
+    const link = path.find(el =>
+        el instanceof HTMLAnchorElement
+    ) as HTMLAnchorElement | undefined;
+
+    if (!link) {
+      console.error("Link not found!", path);
+      return;
+    }
 
     event.preventDefault();
     event.stopPropagation();
 
-    const subscriptionsUrl = `${location.protocol}//${location.host}${this.settings.home_path}`;
-    window.location.assign(subscriptionsUrl);
+    window.location.assign(link.href);
   }
-  */
 
+  //#endregion
+
+  //#region Unneccesary Visual Functions
   // Adjust playlist location and blur sidebar if needed
   private MovePlaylistLocation(root: Document | HTMLElement = document): void {
     const videoEl = document.querySelector("ytd-watch-flexy") as HTMLElement | null;
@@ -190,10 +223,13 @@ class App {
     infoEl.append(textEl1, textEl2, buttonEl);
 
     buttonEl.addEventListener("click", () => {
-      const searchbox = document.querySelector('[name="search_query"') as HTMLElement | null;
+      const searchbox = document.querySelector('[name="search_query"]') as HTMLElement | null;
       searchbox?.focus();
     });
   }
+  //#endregion
+
+  //#region Run On Location Change Listener
 
   // Run redirections on location change
   private RunOnLocationChanged(): void {
@@ -221,15 +257,19 @@ class App {
     window.addEventListener("hashchange", () => this.RunOnLocationChanged());
   }
 
+  //#endregion
+
   // Start the app by loading settings and setting up observers
   public async Start(): Promise<void> {
     await this.set_up_settings().catch(err => console.error("Failed to load settings", err));
+    this.home_url = `${location.protocol}//${location.host}${this.settings.home_path}`
+
     this.Redirections();
     this.AddInfoCardToRecommendations();
 
     this.SetupLocationChangeListeners();
 
-    // document.addEventListener("click", this.ForceSubscriptionsNavigation.bind(this), true);
+    document.addEventListener("click", this.ForceReroutedLinks.bind(this), true);
 
     const observer = new MutationObserver(() => {
       requestAnimationFrame(() => {

@@ -113,14 +113,14 @@ ytd-reel-shelf-renderer:has(#title) { display: none; width: 0; height: 0 ;}
 ytd-notification-renderer:has(a[href*="shorts"]),
 
 /* Home Page (removed shorts and home+shorts buttons) */
-ytd-rich-shelf-renderer[is-shorts],
-a[title="Shorts"],
-a[title="Home"]
+ytd-guide-section-renderer:has(a[title="Shorts"]),
+ytd-guide-section-renderer:has(a[title="Music"]),
+ytd-rich-shelf-renderer:has(a[href*="shorts"])
 
 {
-    filter: blur(2.5px);
-    pointer-events: none; /* <- makes them completely dead */
-    z-index: 9999; /* optional, can help if some child has weird layering */
+    height: 0;
+    width: 0;
+    display: none;
 }
 
 /* Animations */

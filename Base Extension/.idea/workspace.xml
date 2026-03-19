@@ -6,7 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="f96510cc-da7c-4c69-a42d-d0e1560b38f8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/css_injector.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/css_injector.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sites/youtube/settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/sites/youtube/settings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sites/youtube/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/sites/youtube/style.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
