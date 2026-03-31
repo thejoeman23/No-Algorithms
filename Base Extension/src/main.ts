@@ -116,9 +116,9 @@ class App {
 
   //#region Rerouting Links
 
-  // Reroute or remove links based on settings (fixed version)
+  // Reroute or remove links based on settings (optimized: scoped to root)
   private RerouteLinks(root: Document | HTMLElement = document): void {
-    root.querySelectorAll("a[href]").forEach(link => {
+    root.querySelectorAll?.("a[href]").forEach(link => {
         const dataset = link.dataset as DOMStringMap;
         if (dataset.noalgProcessed) return; // skip already processed
 
@@ -147,11 +147,13 @@ class App {
 
         // Redirect blocked paths, handle root "/" specially
         if (url.pathname === "/" && this.slash_is_blocked) {
+            link.setAttribute("og_href", href); // store original href
             link.setAttribute("href", this.home_url);
             console.log(url.pathname);
             dataset.noalgHomeLink = "1";
             return;
         } else if (this.settings.blocked_paths.some(bp => bp !== "/" && (url.pathname.includes(bp)))) {
+            link.setAttribute("og_href", href); // store original href
             link.setAttribute("href", this.home_url);
             console.log(url.pathname);
             dataset.noalgHomeLink = "1";
@@ -187,7 +189,7 @@ class App {
   //#endregion
 
   //#region Unneccesary Visual Functions
-  // Adjust playlist location and blur sidebar if needed
+
   private MovePlaylistLocation(root: Document | HTMLElement = document): void {
     const videoEl = document.querySelector("ytd-watch-flexy") as HTMLElement | null;
     const sidebarEl = document.querySelector("#secondary-inner") as HTMLElement | null;
@@ -206,8 +208,8 @@ class App {
   }
 
   // Add info card to recommendations sidebar
-  private AddInfoCardToRecommendations(): void {
-    const sidebarEl = document.querySelector("#secondary-inner") as HTMLElement | null;
+  private AddInfoCardToRecommendations(root: Document | HTMLElement = document): void {
+    const sidebarEl = root.querySelector?.("#secondary-inner") as HTMLElement | null;
     if (!sidebarEl) return;
     if (document.querySelector("#info-card")) return;
 
@@ -236,18 +238,26 @@ class App {
     });
   }
 
-  private TagInstagramRecommendations(): void {
-    document.querySelectorAll("article").forEach(article => {
+  private articleCounter : number = 0;
+  // Tag Instagram recommendations (optimized: no interval, scoped)
+  private TagInstagramRecommendations(root: Document | HTMLElement = document): void {
+    root.querySelectorAll?.("article").forEach(article => {
       if (article.getAttribute("isRecommendation")) return;
 
-      const isRecommendation = [...article.querySelectorAll("*")].some(el =>
+      const isRecommendation = [...article.querySelectorAll("div")].some(el =>
           el.textContent?.toLowerCase().includes("follow") ||
           el.textContent?.toLowerCase().includes("suggested for you")
       );
 
       if (isRecommendation) {
-        article.setAttribute("isRecommendation", "");
+        article.setAttribute("isRecommendation", "true");
       }
+      else {
+        article.setAttribute("isRecommendation", "false");
+      }
+
+      this.articleCounter++;
+      console.log(`Tagged article #${this.articleCounter} as ${isRecommendation ? "recommendation" : "not recommendation"}`);
     });
   }
 
@@ -265,11 +275,9 @@ class App {
         const main = document.querySelector("main");
 
         if (main?.children?.length === 1) {
-          // This means it is the desktop version since there is no search bar
           main?.setAttribute("remove_from_search", "");
         }
         else {
-          // Remove anything but the search bar for mobile
           main?.children[1]?.setAttribute("remove_from_search", "");
         }
       }
@@ -279,12 +287,10 @@ class App {
 
   //#region Run On Location Change Listener
 
-  // Run redirections on location change
   private RunOnLocationChanged(): void {
     this.Redirections();
   }
 
-  // Setup listeners for history and hash changes
   private SetupLocationChangeListeners(): void {
     const { pushState, replaceState } = history;
     const self = this;
@@ -307,26 +313,36 @@ class App {
 
   //#endregion
 
-  // Start the app by loading settings and setting up observers
   public async Start(): Promise<void> {
     await this.set_up_settings().catch(err => console.error("Failed to load settings", err));
     this.home_url = `${location.protocol}//${location.host}${this.settings.home_path}`
 
     this.Redirections();
     this.AddInfoCardToRecommendations();
-    setInterval(this.TagInstagramRecommendations, 1000);
 
     this.SetupLocationChangeListeners();
 
     document.addEventListener("click", this.ForceReroutedLinks.bind(this), true);
 
+    let scheduled = false;
+
     const observer = new MutationObserver(() => {
+      if (scheduled) return;
+      scheduled = true;
+
       requestAnimationFrame(() => {
-        this.RerouteLinks();
-        this.AddInfoCardToRecommendations();
-        this.RegulateInstagramSearch();
+        // FULL SCAN (this is the key)
+        this.RerouteLinks(document);
+        this.AddInfoCardToRecommendations(document);
+
+        if (location.origin.toLowerCase().includes("instagram")) {
+          this.RegulateInstagramSearch();
+          this.TagInstagramRecommendations(document);
+        }
 
         if (this.settings.custom_path_titles) this.RenameDocumentTitle();
+
+        scheduled = false;
       });
     });
 

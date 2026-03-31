@@ -1,7 +1,8 @@
 /* Home Page (removed reels and explore buttons. removed recommendations)*/
 
 /* this one is like this cuz the "/reels" got rerouted */
-div:has(> span > div > a[href*="instagram"])
+div:has(> span > div > a[og_href*="reels"]),
+div:has(> span > div > a[href*="reels"])
 
 {
     width: 0;
@@ -9,8 +10,8 @@ div:has(> span > div > a[href*="instagram"])
     display: none;
 }
 
-article[isRecommendation=""] {
-    filter: blur(25px);
+article[isRecommendation="true"] {
+    filter: blur(15px);
     pointer-events: none;       /* block all clicks */
     opacity: .5;
 }
@@ -24,7 +25,7 @@ div[role="button"]:has(svg[aria-label="Clip"]) {
 
 /* Account Page (removed reels section) */
 
-div:has(> a[href="https://www.instagram.com/"]) {
+div:has(> a[og_href*="reels"]) {
     width: 0;
     height: 0;
     display: none;
