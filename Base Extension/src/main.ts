@@ -188,7 +188,20 @@ class App {
 
   //#endregion
 
-  //#region Unneccesary Visual Functions
+  private CustomFunctions(root: Document | HTMLElement = document): void {
+
+    if (location.origin.toLowerCase().includes("instagram")) {
+      this.RegulateInstagramSearch();
+      this.TagInstagramRecommendations(document);
+    }
+
+    if (location.origin.toLowerCase().includes("youtube")) {
+      return;
+    }
+    
+  }
+
+  //#region Youtube Functions
 
   private MovePlaylistLocation(root: Document | HTMLElement = document): void {
     const videoEl = document.querySelector("ytd-watch-flexy") as HTMLElement | null;
@@ -207,36 +220,9 @@ class App {
     videoEl.setAttribute("is_single_column_", "");
   }
 
-  // Add info card to recommendations sidebar
-  private AddInfoCardToRecommendations(root: Document | HTMLElement = document): void {
-    const sidebarEl = root.querySelector?.("#secondary-inner") as HTMLElement | null;
-    if (!sidebarEl) return;
-    if (document.querySelector("#info-card")) return;
+  //#endregion
 
-    const infoEl = document.createElement("div");
-    infoEl.id = "info-card";
-    infoEl.classList.add("info-card");
-
-    const textEl1 = document.createElement("span");
-    textEl1.textContent = "What next?";
-    textEl1.id = "info-card-top-text";
-
-    const textEl2 = document.createElement("span");
-    textEl2.textContent = "YOU decide.";
-    textEl2.id = "info-card-main-text";
-
-    const buttonEl = document.createElement("button");
-    buttonEl.textContent = "Search";
-    buttonEl.id = "info-card-button";
-
-    sidebarEl.insertBefore(infoEl, sidebarEl.firstChild);
-    infoEl.append(textEl1, textEl2, buttonEl);
-
-    buttonEl.addEventListener("click", () => {
-      const searchbox = document.querySelector('[name="search_query"]') as HTMLElement | null;
-      searchbox?.focus();
-    });
-  }
+  //#region Instagram Functions
 
   private articleCounter : number = 0;
   // Tag Instagram recommendations (optimized: no interval, scoped)
@@ -318,8 +304,6 @@ class App {
     this.home_url = `${location.protocol}//${location.host}${this.settings.home_path}`
 
     this.Redirections();
-    this.AddInfoCardToRecommendations();
-
     this.SetupLocationChangeListeners();
 
     document.addEventListener("click", this.ForceReroutedLinks.bind(this), true);
@@ -333,12 +317,8 @@ class App {
       requestAnimationFrame(() => {
         // FULL SCAN (this is the key)
         this.RerouteLinks(document);
-        this.AddInfoCardToRecommendations(document);
 
-        if (location.origin.toLowerCase().includes("instagram")) {
-          this.RegulateInstagramSearch();
-          this.TagInstagramRecommendations(document);
-        }
+        this.CustomFunctions(document);
 
         if (this.settings.custom_path_titles) this.RenameDocumentTitle();
 
