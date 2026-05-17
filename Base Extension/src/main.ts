@@ -17,6 +17,15 @@ interface Settings {
   custom_path_titles: PathTitle[];
 }
 
+type ExtensionRuntime = {
+  getURL(path: string): string;
+};
+
+const extensionRuntime = (
+  (globalThis as { browser?: { runtime?: ExtensionRuntime } }).browser?.runtime ??
+  (globalThis as { chrome?: { runtime?: ExtensionRuntime } }).chrome?.runtime
+);
+
 class App {
   private settings!: Settings;
 
@@ -35,7 +44,11 @@ class App {
 
   // Load settings and inject CSS for the target site
   async set_up_settings() {
-    const siteListResponse = await fetch(chrome.runtime.getURL("sites/index.json"));
+    if (!extensionRuntime) {
+      throw new Error("Extension runtime API is not available.");
+    }
+
+    const siteListResponse = await fetch(extensionRuntime.getURL("sites/index.json"));
     const siteFolders: string[] = await siteListResponse.json();
     console.log(`Site folders: ${siteFolders}`);
 
@@ -43,8 +56,8 @@ class App {
       if (!location.origin.includes(folder)) continue;
 
       console.log(`Site folder: ${folder}`);
-      const settingsUrl = chrome.runtime.getURL(`sites/${folder}/settings.json`);
-      const cssUrl = chrome.runtime.getURL(`sites/${folder}/style.css`);
+      const settingsUrl = extensionRuntime.getURL(`sites/${folder}/settings.json`);
+      const cssUrl = extensionRuntime.getURL(`sites/${folder}/style.css`);
 
       const settingsResponse = await fetch(settingsUrl);
       const cssResponse = await fetch(cssUrl);
@@ -118,7 +131,7 @@ class App {
 
   // Reroute or remove links based on settings (optimized: scoped to root)
   private RerouteLinks(root: Document | HTMLElement = document): void {
-    root.querySelectorAll?.("a[href]").forEach(link => {
+    root.querySelectorAll?.<HTMLAnchorElement>("a[href]").forEach(link => {
         const dataset = link.dataset as DOMStringMap;
         if (dataset.noalgProcessed) return; // skip already processed
 
@@ -281,13 +294,13 @@ class App {
     const { pushState, replaceState } = history;
     const self = this;
 
-    history.pushState = function (...args: any[]): any {
+    history.pushState = function (...args: Parameters<History["pushState"]>): ReturnType<History["pushState"]> {
       const result = pushState.apply(this, args);
       self.RunOnLocationChanged();
       return result;
     };
 
-    history.replaceState = function (...args: any[]): any {
+    history.replaceState = function (...args: Parameters<History["replaceState"]>): ReturnType<History["replaceState"]> {
       const result = replaceState.apply(this, args);
       self.RunOnLocationChanged();
       return result;

@@ -32,8 +32,12 @@ lazy-list > ytm-reel-shelf-renderer
     animation: popSlideFade 4s forwards; /* triggers animation */
 }
 
-#secondary-inner {
-    width: 0 !important;
+div[aria-label="Hide videos"],
+button[aria-label*="More videos"] {
+    display: none;
+    height: none;
+    width: none;
+    scroll-behavior: unset;
 }
 
 /* Chanel Page (removed Shorts tab) */
