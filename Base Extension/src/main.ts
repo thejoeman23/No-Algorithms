@@ -33,6 +33,8 @@ class App {
   private slash_is_blocked!: boolean;
 
   constructor() {
+    console.log("Initializing app...");
+
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => this.Start(), { once: true });
     } else {
