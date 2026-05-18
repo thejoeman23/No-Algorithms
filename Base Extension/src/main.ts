@@ -247,7 +247,7 @@ class App {
 
       const isRecommendation = [...article.querySelectorAll("div")].some(el =>
           el.textContent?.toLowerCase().includes("follow") ||
-          el.textContent?.toLowerCase().includes("suggested for you")
+          el.textContent?.toLowerCase().includes("suggested for you") 
       );
 
       if (isRecommendation) {
