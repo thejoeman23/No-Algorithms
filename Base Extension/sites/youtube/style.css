@@ -6,6 +6,7 @@
 ytm-rich-section-renderer:has(a[href*="short"]),
 ytm-pivot-bar-item-renderer:has(.pivot-w2w),
 ytm-pivot-bar-item-renderer:has(.pivot-shorts),
+ytm-reel-shelf-renderer,
 
     /* Video Page (removed reccomendations) */
 [section-identifier="related-items"],
