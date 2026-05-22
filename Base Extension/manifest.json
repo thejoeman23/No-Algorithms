@@ -3,6 +3,10 @@
   "manifest_version": 3,
   "version": "1.0.0",
   "description": "Removes algorithmic feeds from websites. No toggles.",
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.instagram.com/*"
+  ],
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*", "*://*.instagram.com/*"],

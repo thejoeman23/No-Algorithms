@@ -9,6 +9,8 @@ import WebKit
 
 #if os(iOS)
 import UIKit
+import SafariServices
+import ObjectiveC
 typealias PlatformViewController = UIViewController
 #elseif os(macOS)
 import Cocoa
@@ -60,8 +62,22 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-#if os(macOS)
-        if (message.body as! String != "open-preferences") {
+        guard let message = message.body as? String else {
+            return
+        }
+
+#if os(iOS)
+        if message != "open-safari-settings" {
+            return
+        }
+
+        if openSafariExtensionSettings() {
+            return
+        }
+
+        openFallbackSafariSettings()
+#elseif os(macOS)
+        if message != "open-preferences" {
             return
         }
 
@@ -78,4 +94,57 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
 #endif
     }
 
+#if os(iOS)
+    private func openFallbackSafariSettings() {
+        let urlString: String
+        if #available(iOS 18.3, *) {
+            urlString = UIApplication.openDefaultApplicationsSettingsURLString
+        } else {
+            urlString = "App-Prefs:root=SAFARI"
+        }
+
+        if let url = URL(string: urlString) {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    private func openSafariExtensionSettings() -> Bool {
+        guard #available(iOS 26.0, *) else {
+            let version = ProcessInfo.processInfo.operatingSystemVersion
+            NSLog("Safari extension settings API requires iOS 26.0+. Current iOS version: \(version.majorVersion).\(version.minorVersion).\(version.patchVersion)")
+            return false
+        }
+
+        guard let settingsClass = NSClassFromString("SFSafariSettings") else {
+            NSLog("SFSafariSettings class is not available on this runtime.")
+            return false
+        }
+
+        let selector = NSSelectorFromString("openExtensionsSettingsForIdentifiers:completionHandler:")
+        guard let method = class_getClassMethod(settingsClass, selector) else {
+            NSLog("SFSafariSettings.openExtensionsSettings(forIdentifiers:) is not available on this runtime.")
+            return false
+        }
+
+        let implementation = method_getImplementation(method)
+        typealias OpenExtensionsSettings = @convention(c) (
+            AnyClass,
+            Selector,
+            NSArray,
+            (@convention(block) (NSError?) -> Void)?
+        ) -> Void
+
+        let openSettings = unsafeBitCast(implementation, to: OpenExtensionsSettings.self)
+        openSettings(settingsClass, selector, [extensionBundleIdentifier] as NSArray) { error in
+            if let error {
+                NSLog("Unable to open Safari extension settings: \(error)")
+                DispatchQueue.main.async {
+                    self.openFallbackSafariSettings()
+                }
+            }
+        }
+
+        return true
+    }
+#endif
 }
