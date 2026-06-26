@@ -1,0 +1,17 @@
+/* Home Page */
+div:has(> span > div > a[og_href*="reels"]) {
+  pointer-events: none;
+}
+
+/* DMs */
+/* div[role="button"]:has(svg[aria-label="Clip"]) {
+  filter: blur(25px);
+  pointer-events: none;
+} */
+
+/* Account Page */
+div:has(> a[og_href*="reels"]) {
+  width: 0;
+  height: 0;
+  display: none;
+}

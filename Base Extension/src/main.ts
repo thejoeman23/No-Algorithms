@@ -1,22 +1,3 @@
-// ============================================================
-// No Algorithms - YouTube Script
-// Purpose: Remove algorithmic surfaces and redirect the user
-//          to subscriptions-only browsing.
-// ============================================================
-
-interface PathTitle {
-  path: string;
-  title: string;
-}
-
-interface Settings {
-  website_name: string;
-  home_path: string;
-  blocked_paths: string[];
-  remove_links_to_path: string[]
-  custom_path_titles: PathTitle[];
-}
-
 type ExtensionRuntime = {
   getURL(path: string): string;
 };
@@ -26,304 +7,186 @@ const extensionRuntime = (
   (globalThis as { chrome?: { runtime?: ExtensionRuntime } }).chrome?.runtime
 );
 
-class App {
-  private settings!: Settings;
-  private home_url!: string;
+class App implements NoAlgorithmsContext {
+  private activeFeatures: NoAlgorithmsFeature[] = [];
+  private cssEntries: {
+    path: string;
+    source: string;
+    style: HTMLStyleElement;
+  }[] = [];
 
-  private slash_is_blocked!: boolean;
-  
   constructor() {
     console.log("Initializing app...");
-    
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => this.Start(), { once: true });
-    } else {
-      this.Start();
-    }
 
-    console.log("Running constructor...");
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => this.start(), { once: true });
+    } else {
+      this.start();
+    }
   }
 
-  // Load settings and inject CSS for the target site
-  async set_up_settings() {
+  public absoluteUrl(path: string): string {
+    return `${location.protocol}//${location.host}${path}`;
+  }
+
+  public isCurrentSite(site: string): boolean {
+    return location.hostname.includes(site);
+  }
+
+  private async injectCss(path: string): Promise<void> {
     if (!extensionRuntime) {
       throw new Error("Extension runtime API is not available.");
     }
 
-    const siteListResponse = await fetch(extensionRuntime.getURL("sites/index.json"));
-    const siteFolders: string[] = await siteListResponse.json();
-    console.log(`Site folders: ${siteFolders}`);
-
-    for (const folder of siteFolders) {
-      if (!location.origin.includes(folder)) continue;
-
-      console.log(`Site folder: ${folder}`);
-      const settingsUrl = extensionRuntime.getURL(`sites/${folder}/settings.json`);
-      const cssUrl = extensionRuntime.getURL(`sites/${folder}/style.css`);
-
-      const settingsResponse = await fetch(settingsUrl);
-      const cssResponse = await fetch(cssUrl);
-
-      this.settings = await settingsResponse.json();
-      const css = await cssResponse.text();
-      this.Inject(css, "style");
-
-      if (this.settings.blocked_paths.some(bp => bp === "/")) this.slash_is_blocked = true;
-
-      break; // stop after first found site
-    }
-  }
-
-  //#region Helper Functions
-
-  // Inject CSS into document head
-  private Inject(content: string, el_type: string): void {
-    const style = document.createElement(el_type);
-    style.textContent = content;
+    const response = await fetch(extensionRuntime.getURL(path));
+    const css = await response.text();
+    const style = document.createElement("style");
+    style.textContent = this.cssForCurrentPath(css);
     document.head.appendChild(style);
-    console.log("Injected:\n" + content);
+    this.cssEntries.push({ path, source: css, style });
+    console.log(`Injected CSS: ${path}`);
   }
 
-  // Check if current website matches the configured site
-  private Is_correct_website(): boolean {
-    return location.hostname.includes(this.settings.website_name);
-  }
+  private cssForCurrentPath(css: string): string {
+    const lines = css.split("\n");
+    let sectionPath: string | null = null;
 
-  //#endregion
+    return lines
+      .filter(line => {
+        const sectionMatch = line.match(/^\s*\/\*\s*(\/\S*)\s*\*\/\s*$/);
 
-  //#region Redirections
-  
-
-  // Determine if the current path should be redirected
-  private ShouldRedirect(pathname: string): boolean {
-    for (const blockedPath of this.settings.blocked_paths) {
-      if (pathname === "/" && this.slash_is_blocked) return true;
-      if (pathname.includes(blockedPath) && blockedPath !== "/") return true;
-    }
-    return false;
-  }
-
-  // Redirect user to home path if on blocked path
-  private Redirections(): void {
-    if (!this.Is_correct_website()) return;
-
-    if (this.ShouldRedirect(location.pathname)) {
-      window.location.replace(this.home_url);
-    }
-    
-  }
-
-  //#endregion
-
-  //#region Title Renaming
-
-  // Rename document title based on custom path titles
-  private RenameDocumentTitle(): void {
-    if (!this.Is_correct_website()) return;
-
-    for (const customTitle of this.settings.custom_path_titles) {
-      if (location.pathname === customTitle.path && document.title !== customTitle.title) {
-        document.title = customTitle.title;
-        break;
-      }
-    }
-  }
-
-  //#endregion
-
-  //#region Rerouting Links
-
-  // Reroute or remove links based on settings (optimized: scoped to root)
-  private RerouteLinks(root: Document | HTMLElement = document): void {
-    root.querySelectorAll?.<HTMLAnchorElement>("a[href]").forEach(link => {
-        const dataset = link.dataset as DOMStringMap;
-        if (dataset.noalgProcessed) return; // skip already processed
-
-        const href = link.getAttribute("href");
-        if (!href) return;
-
-        // Remove links that start with remove_links_to_path
-        // if (this.settings.remove_links_to_path.some(p => href.startsWith(p))) {
-        //     link.parentElement?.remove();
-        //     dataset.noalgProcessed = "1";
-        //     return;
-        // }
-
-        let url: URL;
-        try { url = new URL(href, location.origin); } catch {
-            dataset.noalgProcessed = "1";
-            return;
+        if (sectionMatch) {
+          sectionPath = sectionMatch[1];
+          return false;
         }
 
-        // Only target YouTube links
-        const hostname = url.hostname;
-        if (!hostname.includes(this.settings.website_name)) {
-            dataset.noalgProcessed = "1";
-            return;
-        }
+        return !sectionPath || sectionPath === location.pathname;
+      })
+      .join("\n");
+  }
 
-        // Redirect blocked paths, handle root "/" specially
-        if (url.pathname === "/" && this.slash_is_blocked) {
-            link.setAttribute("og_href", href); // store original href
-            link.setAttribute("href", this.home_url);
-            console.log(url.pathname);
-            dataset.noalgHomeLink = "1";
-            return;
-        } else if (this.settings.blocked_paths.some(bp => bp !== "/" && (url.pathname.includes(bp)))) {
-            link.setAttribute("og_href", href); // store original href
-            link.setAttribute("href", this.home_url);
-            console.log(url.pathname);
-            dataset.noalgHomeLink = "1";
-        }
-
-        // Mark as processed
-        dataset.noalgProcessed = "1";
+  private refreshCssForCurrentPath(): void {
+    this.cssEntries.forEach(entry => {
+      entry.style.textContent = this.cssForCurrentPath(entry.source);
     });
   }
 
-  // Force navigation to href of rerouted links
-  private ForceReroutedLinks(event: MouseEvent): void {
+  private async setUpFeatures(): Promise<void> {
+    const features = window.noAlgorithmsFeatures ?? [];
+    this.activeFeatures = features.filter(feature => this.isCurrentSite(feature.site));
+
+    await Promise.all(
+      this.activeFeatures
+        .filter(feature => feature.cssPath)
+        .map(feature => this.injectCss(feature.cssPath as string))
+    );
+
+    this.activeFeatures.forEach(feature => feature.onStart?.(this));
+  }
+
+  private redirectForCurrentPath(): string | null {
+    for (const feature of this.activeFeatures) {
+      const redirectPath = feature.shouldRedirect?.(this, location.pathname);
+      if (redirectPath) return this.absoluteUrl(redirectPath);
+    }
+
+    return null;
+  }
+
+  private runOnLocationChanged(): void {
+    const redirectUrl = this.redirectForCurrentPath();
+
+    if (redirectUrl) {
+      window.location.replace(redirectUrl);
+      return;
+    }
+
+    this.refreshCssForCurrentPath();
+    this.activeFeatures.forEach(feature => feature.onLocationChange?.(this));
+  }
+
+  private setUpLocationChangeListeners(): void {
+    const { pushState, replaceState } = history;
+
+    history.pushState = (...args: Parameters<History["pushState"]>): ReturnType<History["pushState"]> => {
+      const result = pushState.apply(history, args);
+      this.runOnLocationChanged();
+      return result;
+    };
+
+    history.replaceState = (...args: Parameters<History["replaceState"]>): ReturnType<History["replaceState"]> => {
+      const result = replaceState.apply(history, args);
+      this.runOnLocationChanged();
+      return result;
+    };
+
+    window.addEventListener("popstate", () => this.runOnLocationChanged());
+    window.addEventListener("hashchange", () => this.runOnLocationChanged());
+  }
+
+  private rerouteLinks(root: Document | HTMLElement = document): void {
+    root.querySelectorAll<HTMLAnchorElement>("a[href]").forEach(link => {
+      const dataset = link.dataset as DOMStringMap;
+      if (dataset.noalgProcessed) return;
+
+      const href = link.getAttribute("href");
+      if (!href) return;
+
+      let url: URL;
+      try {
+        url = new URL(href, location.origin);
+      } catch {
+        dataset.noalgProcessed = "1";
+        return;
+      }
+
+      if (!this.activeFeatures.some(feature => url.hostname.includes(feature.site))) {
+        dataset.noalgProcessed = "1";
+        return;
+      }
+
+      for (const feature of this.activeFeatures) {
+        const redirectPath = feature.shouldRerouteLink?.(this, url);
+        if (!redirectPath) continue;
+
+        link.setAttribute("og_href", href);
+        link.setAttribute("href", this.absoluteUrl(redirectPath));
+        dataset.noalgHomeLink = "1";
+        break;
+      }
+
+      dataset.noalgProcessed = "1";
+    });
+  }
+
+  private forceReroutedLinks(event: MouseEvent): void {
     if (event.button !== 0) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-    const path = event.composedPath();
-
-    const link = path.find(el =>
-        el instanceof HTMLAnchorElement
+    const link = event.composedPath().find(el =>
+      el instanceof HTMLAnchorElement
     ) as HTMLAnchorElement | undefined;
 
-    if (!link) {
-      console.error("Link not found!", path);
-      return;
-    }
+    if (!link?.dataset.noalgHomeLink) return;
 
     event.preventDefault();
     event.stopPropagation();
-
     window.location.assign(link.href);
   }
 
-  //#endregion
-
-  private CustomFunctions(root: Document | HTMLElement = document): void {
-
-    if (location.origin.toLowerCase().includes("instagram")) {
-      this.RegulateInstagramSearch();
-      this.TagInstagramRecommendations(document);
-    }
-
-    if (location.origin.toLowerCase().includes("youtube")) {
-      return;
-    }
-    
+  private runDomFeatures(root: Document | HTMLElement = document): void {
+    this.rerouteLinks(root);
+    this.activeFeatures.forEach(feature => feature.onDomChange?.(this, root));
   }
 
-  //#region Youtube Functions
+  public async start(): Promise<void> {
+    await this.setUpFeatures().catch(err => console.error("Failed to set up features", err));
 
-  private MovePlaylistLocation(root: Document | HTMLElement = document): void {
-    const videoEl = document.querySelector("ytd-watch-flexy") as HTMLElement | null;
-    const sidebarEl = document.querySelector("#secondary-inner") as HTMLElement | null;
-    if (!videoEl || !sidebarEl) return;
+    this.runOnLocationChanged();
+    this.runDomFeatures(document);
+    this.setUpLocationChangeListeners();
 
-    if (!videoEl.hasAttribute("playlist") && !sidebarEl.contains(document.querySelector("#chat-container") as HTMLElement | null)) {
-      const style = document.createElement("style");
-      style.textContent = "#secondary { filter: blur(10px) }";
-      document.head.appendChild(style);
-      return;
-    }
-    if (videoEl.hasAttribute("theater")) return;
-
-    videoEl.removeAttribute("is-two-columns_");
-    videoEl.setAttribute("is_single_column_", "");
-  }
-
-  //#endregion
-
-  //#region Instagram Functions
-
-  private articleCounter : number = 0;
-  // Tag Instagram recommendations (optimized: no interval, scoped)
-  private TagInstagramRecommendations(root: Document | HTMLElement = document): void {
-    root.querySelectorAll?.("article").forEach(article => {
-      if (article.getAttribute("isRecommendation")) return;
-
-      const isRecommendation = [...article.querySelectorAll("div")].some(el =>
-          el.textContent?.toLowerCase().includes("follow") ||
-          el.textContent?.toLowerCase().includes("suggested for you") 
-      );
-
-      if (isRecommendation) {
-        article.setAttribute("isRecommendation", "true");
-      }
-      else {
-        article.setAttribute("isRecommendation", "false");
-      }
-
-      this.articleCounter++;
-      console.log(`Tagged article #${this.articleCounter} as ${isRecommendation ? "recommendation" : "not recommendation"}`);
-    });
-  }
-
-  private RegulateInstagramSearch(): void {
-    const path = location.pathname;
-    if (path.startsWith("/explore"))
-    {
-      console.log("grrr");
-
-      if (path.includes("/search")) {
-        const searchResults = document.querySelector("ul");
-        searchResults?.children[0]?.setAttribute("remove_from_search", "");
-      }
-      else {
-        const main = document.querySelector("main");
-
-        if (main?.children?.length === 1) {
-          main?.setAttribute("remove_from_search", "");
-        }
-        else {
-          main?.children[1]?.setAttribute("remove_from_search", "");
-        }
-      }
-    }
-  }
-  //#endregion
-
-  //#region Run On Location Change Listener
-
-  private RunOnLocationChanged(): void {
-    this.Redirections();
-  }
-
-  private SetupLocationChangeListeners(): void {
-    const { pushState, replaceState } = history;
-    const self = this;
-
-    history.pushState = function (...args: Parameters<History["pushState"]>): ReturnType<History["pushState"]> {
-      const result = pushState.apply(this, args);
-      self.RunOnLocationChanged();
-      return result;
-    };
-
-    history.replaceState = function (...args: Parameters<History["replaceState"]>): ReturnType<History["replaceState"]> {
-      const result = replaceState.apply(this, args);
-      self.RunOnLocationChanged();
-      return result;
-    };
-
-    window.addEventListener("popstate", () => this.RunOnLocationChanged());
-    window.addEventListener("hashchange", () => this.RunOnLocationChanged());
-  }
-
-  //#endregion
-
-  public async Start(): Promise<void> {
-    await this.set_up_settings().catch(err => console.error("Failed to load settings", err));
-    this.home_url = `${location.protocol}//${location.host}${this.settings.home_path}`
-
-    this.Redirections();
-    this.SetupLocationChangeListeners();
-
-    document.addEventListener("click", this.ForceReroutedLinks.bind(this), true);
+    document.addEventListener("click", this.forceReroutedLinks.bind(this), true);
 
     let scheduled = false;
 
@@ -332,13 +195,8 @@ class App {
       scheduled = true;
 
       requestAnimationFrame(() => {
-        // FULL SCAN (this is the key)
-        this.RerouteLinks(document);
-
-        this.CustomFunctions(document);
-
-        if (this.settings.custom_path_titles) this.RenameDocumentTitle();
-
+        this.runDomFeatures(document);
+        this.runOnLocationChanged();
         scheduled = false;
       });
     });
@@ -352,4 +210,4 @@ class App {
 
 const app = new App();
 
-console.log("Running app...");
+console.log("Running app...", app);

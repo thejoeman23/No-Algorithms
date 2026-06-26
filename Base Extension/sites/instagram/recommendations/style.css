@@ -1,0 +1,5 @@
+article[isRecommendation="true"] {
+  filter: blur(15px);
+  pointer-events: none;
+  opacity: .5;
+}

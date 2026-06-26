@@ -10,7 +10,16 @@
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*", "*://*.instagram.com/*"],
-      "js": ["dist/main.js"]
+      "js": [
+        "dist/src/feature.js",
+        "dist/sites/youtube/homepage/feature.js",
+        "dist/sites/youtube/shorts/feature.js",
+        "dist/sites/youtube/recommendations/feature.js",
+        "dist/sites/instagram/reels/feature.js",
+        "dist/sites/instagram/recommendations/feature.js",
+        "dist/sites/instagram/search/feature.js",
+        "dist/src/main.js"
+      ]
     }
   ],
   "web_accessible_resources": [{

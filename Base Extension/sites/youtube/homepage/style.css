@@ -1,0 +1,7 @@
+/* Home Page */
+ytm-pivot-bar-item-renderer:has(.pivot-w2w),
+a[aria-label="Home"] {
+  height: 0;
+  width: 0;
+  display: none;
+}

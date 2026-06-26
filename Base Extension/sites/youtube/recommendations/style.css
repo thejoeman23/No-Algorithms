@@ -1,0 +1,46 @@
+/* Mobile Video Page */
+[section-identifier="related-items"] {
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
+}
+
+/* Desktop Video Page */
+#related {
+  pointer-events: none;
+  overflow: hidden;
+  width: auto;
+  opacity: 1;
+  filter: blur(0);
+  transform: translateX(0);
+  animation: popSlideFade 4s forwards;
+}
+
+div[aria-label="Hide videos"],
+button[aria-label*="More videos"],
+ytd-guide-section-renderer:has(a[title="Music"]) {
+  display: none;
+  height: 0;
+  width: 0;
+  scroll-behavior: unset;
+}
+
+@keyframes popSlideFade {
+  0% {
+    opacity: 1;
+    filter: blur(3px);
+    transform: translateX(0);
+  }
+
+  15% {
+    opacity: 1;
+    filter: blur(3px);
+    transform: translateX(0);
+  }
+
+  100% {
+    opacity: 0;
+    filter: blur(35px);
+    transform: translateX(-50px);
+  }
+}

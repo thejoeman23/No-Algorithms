@@ -1,0 +1,29 @@
+/* Mobile Shorts */
+ytm-rich-section-renderer:has(a[href*="short"]),
+ytm-pivot-bar-item-renderer:has(.pivot-shorts),
+ytm-reel-shelf-renderer,
+lazy-list > ytm-reel-shelf-renderer,
+
+/* Channel Page */
+.yt-tab-shape[tab-title="Shorts"],
+
+/* Watch History Page */
+ytd-reel-shelf-renderer:has(#title),
+.ytChipBarViewModelChipWrapper:has(button[aria-label="Shorts"]),
+
+/* Notifications */
+ytd-notification-renderer:has(a[og_href*="shorts"]),
+
+/* Navigation and Home Surfaces */
+ytd-guide-section-renderer:has(a[title="Shorts"]),
+ytd-rich-shelf-renderer:has(a[og_href*="shorts"]),
+a[aria-label="Shorts"],
+
+/* Search Page */
+grid-shelf-view-model:has(a[og_href*="shorts"]),
+iron-selector > :nth-child(2),
+ytd-search-filter-renderer:has(div[title*="Shorts"]) {
+  display: none !important;
+  height: 0 !important;
+  width: 0 !important;
+}
