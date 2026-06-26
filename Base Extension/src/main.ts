@@ -28,13 +28,13 @@ const extensionRuntime = (
 
 class App {
   private settings!: Settings;
-
   private home_url!: string;
-  private slash_is_blocked!: boolean;
 
+  private slash_is_blocked!: boolean;
+  
   constructor() {
     console.log("Initializing app...");
-
+    
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", () => this.Start(), { once: true });
     } else {
@@ -92,6 +92,7 @@ class App {
   //#endregion
 
   //#region Redirections
+  
 
   // Determine if the current path should be redirected
   private ShouldRedirect(pathname: string): boolean {
@@ -109,6 +110,7 @@ class App {
     if (this.ShouldRedirect(location.pathname)) {
       window.location.replace(this.home_url);
     }
+    
   }
 
   //#endregion

@@ -75,7 +75,6 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
             return
         }
 
-        openFallbackSafariSettings()
 #elseif os(macOS)
         if message != "open-preferences" {
             return

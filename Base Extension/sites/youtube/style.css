@@ -39,7 +39,7 @@ button[aria-label*="More videos"] {
     height: none;
     width: none;
     scroll-behavior: unset;
-}
+} 
 
 /* Chanel Page (removed Shorts tab) */
 .yt-tab-shape[tab-title="Shorts"] {
