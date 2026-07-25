@@ -72,8 +72,14 @@ class App implements NoAlgorithmsContext {
   }
 
   private async setUpFeatures(): Promise<void> {
-    const features = window.noAlgorithmsFeatures ?? [];
-    this.activeFeatures = features.filter(feature => this.isCurrentSite(feature.site));
+    let features = window.noAlgorithmsFeatures ?? [];
+
+    this.activeFeatures = features.filter(feature =>
+      this.isCurrentSite(feature.site) &&
+      (feature.metadata?.enabled ?? true) &&
+      (!feature.metadata?.enabledUntil || new Date() < new Date(feature.metadata.enabledUntil)) &&
+      (!feature.metadata?.scheduleEnabled || isFeatureScheduled(feature.metadata.schedule ?? null))
+    );
 
     await Promise.all(
       this.activeFeatures
@@ -83,6 +89,7 @@ class App implements NoAlgorithmsContext {
 
     this.activeFeatures.forEach(feature => feature.onStart?.(this));
   }
+
 
   private redirectForCurrentPath(): string | null {
     for (const feature of this.activeFeatures) {
