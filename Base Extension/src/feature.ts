@@ -18,6 +18,7 @@ interface NoAlgorithmsFeature {
 interface NoAlgorithmsFeatureMetadata {
   enabled?: boolean;
   schedule?: FeatureSchedule;
+  scheduleEnabled?: boolean;
   enabledUntil?: string;
 }
 
